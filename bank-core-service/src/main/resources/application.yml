@@ -1,0 +1,29 @@
+spring:
+  application:
+    name: bank-core-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/bankcore}
+    username: ${DB_USER:bankcore}
+    password: ${DB_PASSWORD:bankcore}
+  jackson:
+    default-property-inclusion: always
+
+server:
+  port: ${PORT:8080}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+bank:
+  seed:
+    enabled: true
+    random-seed: 42
+    # The "today" of the synthetic world. Trades and breaks are generated relative to it.
+    business-date: 2026-10-16
+    clean-trades: 160
+    breaks-per-type: 5
+    # Read only by the eval harness. Never served by the API.
+    manifest-path: ../data/seed_manifest.json

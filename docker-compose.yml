@@ -1,0 +1,19 @@
+services:
+  postgres:
+    # pgvector image so Module 3 (RAG) can share this database.
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-bankcore}
+      POSTGRES_USER: ${POSTGRES_USER:-bankcore}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bankcore}
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-bankcore}"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  pgdata:
