@@ -125,3 +125,58 @@ Deferred to v3: red-herring (two discrepancies, one real) and false-positive con
 **Decision:** Trades are shuffled before references are assigned. Break refs are assigned in `detected_at` order.
 
 **Why:** Prevents patterns like "breaks are always the last 40 trade refs" or "BRK-0001..0005 are all quantity breaks". Neither the agent nor a reviewer can infer the answer from IDs.
+
+---
+
+## ADR-012 — MCP tools: one tool per endpoint (fine-grained)
+**Module:** 2 · **Date:** 2026-10-22
+
+**Options:** one tool per endpoint · one coarse `investigate_break` tool · both (thin tools now, a bundled context tool later).
+
+**Decision:** One tool per endpoint. A bundled tool may be added later, only if eval numbers show too many calls.
+
+**Why:** The investigation is the agent's job. Fine-grained tools make each step visible, so the eval can measure tool-call correctness (did it check SSIs before blaming them?). A coarse tool would hide that and make the metric meaningless. Adding a bundled tool later, justified by measured call counts, is a ready-made v3 "what I changed and what improved" story.
+
+---
+
+## ADR-013 — v1 tool set: five read tools, write tool deferred
+**Module:** 2 · **Date:** 2026-10-22
+
+**Decision:** `list_open_breaks`, `get_break`, `get_trade`, `get_confirmations`, `get_settlement_instructions`. `propose_resolution` (write, human approval) waits for v4.
+
+**Why:** These five are the minimum to investigate any of the 8 break types end to end. Leaving writes out of v1 means the server is read-only by construction, the simplest possible permission model until guardrails exist.
+
+---
+
+## ADR-014 — Tool descriptions explain meaning, never diagnosis
+**Module:** 2 · **Date:** 2026-10-22
+
+**Options:** minimal · semantic (field meanings, what empty means) · semantic plus investigation hints.
+
+**Decision:** Semantic. Descriptions say what the tool returns, what fields mean (e.g. `counterpartySide` is *their* side) and what an empty result means (e.g. "no confirmation received"). They never say how to diagnose a break type.
+
+**Why:** Good semantics stop the model from misreading data, which is a tool-design problem. Diagnostic recipes are runbook knowledge, which belongs in the v2 knowledge base. Keeping them out of v1 gives a clean baseline, so v2 can measure how much RAG actually adds.
+
+---
+
+## ADR-015 — Tools return the API's data as is, with clear errors
+**Module:** 2 · **Date:** 2026-10-22
+
+**Options:** pass the API's JSON through · add computed fields (e.g. `ssi_valid_on_settlement_date`).
+
+**Decision:** Pass-through. Unknown refs and unreachable backends come back as short, explicit error messages the model can act on, not stack traces.
+
+**Why:** Computed judgments would do the diagnosis inside the tool, so the agent would just read the answer (same reasoning as ADR-002). The MCP server is an integration layer, not a reasoning layer.
+
+**Amendment (found in live testing):** list results are wrapped in a named object (`{"confirmations": [...]}`). Returned as a bare list, the SDK emits one content block per item and *zero* blocks for an empty list, so "no confirmation received" reached the client as a blank response. A regression test covers it.
+
+---
+
+## ADR-016 — Official MCP Python SDK (MCPServer) over stdio
+**Module:** 2 · **Date:** 2026-10-22
+
+**Options:** stdio · streamable HTTP.
+
+**Decision:** The official `mcp` Python SDK (v2, `MCPServer` API) with stdio transport. Every tool carries a `readOnlyHint` annotation. Python and dependencies managed with `uv`.
+
+**Why:** stdio is the simplest transport: the agent (or Claude Code, via `claude mcp add`) starts the server as a subprocess, with no ports or auth. The SDK makes switching to HTTP a one-line change for the Docker setup in v5.

@@ -75,4 +75,5 @@ Every version should produce a measurable "here's what I changed and what improv
 ## Current status
 
 - [x] Module 1: Bank core service v0.1 (decisions ADR-001..011; see docs/CHANGELOG.md)
-- [ ] Module 2: MCP server (next up: tool granularity, names and descriptions)
+- [x] Module 2: MCP server v0.2 (decisions ADR-012..016)
+- [ ] Module 4 (v1 slice): agent handling one break type end to end (next up: free-form agent vs. fixed workflow, autonomy)
