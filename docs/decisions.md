@@ -180,3 +180,27 @@ Deferred to v3: red-herring (two discrepancies, one real) and false-positive con
 **Decision:** The official `mcp` Python SDK (v2, `MCPServer` API) with stdio transport. Every tool carries a `readOnlyHint` annotation. Python and dependencies managed with `uv`.
 
 **Why:** stdio is the simplest transport: the agent (or Claude Code, via `claude mcp add`) starts the server as a subprocess, with no ports or auth. The SDK makes switching to HTTP a one-line change for the Docker setup in v5.
+
+---
+
+## ADR-017 — Integration tests run on real Postgres via Testcontainers
+**Module:** 1 · **Date:** 2026-10-25
+
+**Options:** Testcontainers (Docker) · embedded Postgres (Zonky, no Docker) · H2 in PostgreSQL mode.
+
+**Decision:** Testcontainers, with the same `pgvector/pgvector:pg16` image as docker-compose, wired in through Spring Boot's `@ServiceConnection`. One container and one Spring context are shared by every integration test class (`IntegrationTestSupport`).
+
+**Why:** The SQL is Postgres-specific (`timestamptz`, identity columns, `cast(:x as varchar) is null`). H2 would only imitate it, so green tests could hide bugs that break on the real database. Zonky runs real Postgres but not the image we deploy. Testcontainers tests exactly what runs in production. Cost: `mvn test` needs Docker running, which the project already requires.
+
+Tests regenerate the deterministic seed in memory to know what the database holds, instead of hard-coding refs. They also pin API contracts the MCP layer relies on, e.g. SSI ordering (market, then latest `effectiveFrom` first), which the `get_settlement_instructions` description promises.
+
+---
+
+## ADR-018 — Coverage gate: 95% line and branch, enforced on `mvn verify`
+**Module:** 1 · **Date:** 2026-10-25
+
+**Decision:** JaCoCo `check` fails the build below 95% line *and* branch coverage across the whole module (`jacoco.minimum` in `pom.xml`). No classes are excluded. *(implementation: line + branch, bundle level, bound to `verify` so `mvn test` stays a quick run.)*
+
+**Why:** A high gate keeps the "existing enterprise system" honest as it grows. Branch coverage is included because line coverage alone hides untested `if` paths. Nothing is excluded, so the number is not inflated.
+
+**Known limits:** Remaining misses are the compiler's synthetic default branch on an enum `switch`, seed-dependent branches in the generator, and `BankCoreApplication.main()`. Branch coverage sits about 1 point above the gate, so new seed-driven randomness could fail the build without a real bug. If that happens, lower the gate or add a targeted test; don't add exclusions to game the number.

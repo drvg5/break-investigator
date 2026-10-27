@@ -1,5 +1,17 @@
 # Changelog
 
+## v0.2.1 — 2026-10-25 — Bank core test coverage
+**Changed:** 17 integration tests for the bank core service (API, repositories, seed loader) running on real
+Postgres via Testcontainers (ADR-017). JaCoCo added with a 95% line and branch gate on `mvn verify` (ADR-018).
+Removed a dead null check in `SeedLoader`.
+
+**Measured:** 22 Java tests pass. Coverage went from 54.6% lines / 83.7% branches (generator only) to 99.5% lines /
+96.1% branches. `repo` and `api` went from 0% to 100% lines.
+
+**Improved:** the SSI ordering that the `get_settlement_instructions` description promises (market, then latest
+`effectiveFrom` first; shipped in v0.2) is now pinned by a test, so changing the query can't silently make the tool
+description wrong.
+
 ## v0.2 — 2026-10-22 — Module 2: MCP server
 **Changed:** Python MCP server (`mcp-server/`, official SDK v2, stdio, managed with uv) exposing five read-only
 tools, one per bank API endpoint: `list_open_breaks`, `get_break`, `get_trade`, `get_confirmations`,

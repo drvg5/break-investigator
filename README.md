@@ -8,7 +8,7 @@ See `CLAUDE.md` for full context and `docs/decisions.md` for design decisions.
 | # | Module | Status |
 |---|---|---|
 | 1 | Bank core service (Java / Spring Boot) | ✅ v0.1 |
-| 2 | MCP server (Python) | ✅ v0.1 |
+| 2 | MCP server (Python) | ✅ v0.2 |
 | 3 | Knowledge base (RAG) | — |
 | 4 | Agent (LangGraph) | — |
 | 5 | Guardrails + audit | — |
@@ -39,7 +39,13 @@ To reseed: `docker compose down -v`, then start again.
 | `GET /api/trades/{tradeRef}/confirmations` | Counterparty confirmations (empty list = none received) |
 | `GET /api/counterparties/{code}/settlement-instructions?market=US` | All SSI versions, including expired |
 
-Tests: `cd bank-core-service && mvn test`
+Tests (Docker must be running: the integration tests start a throwaway Postgres with [Testcontainers](https://testcontainers.com/)):
+
+```bash
+cd bank-core-service
+mvn test      # all tests + coverage report at target/site/jacoco/index.html
+mvn verify    # same, then fails the build if line or branch coverage is below 95%
+```
 
 ## Run the MCP server
 
