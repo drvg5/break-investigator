@@ -10,7 +10,7 @@ See `CLAUDE.md` for full context and `docs/decisions.md` for design decisions.
 | 1 | Bank core service (Java / Spring Boot) | ✅ v0.1 |
 | 2 | MCP server (Python) | ✅ v0.2 |
 | 3 | Knowledge base (RAG) | — |
-| 4 | Agent (LangGraph) | — |
+| 4 | Agent (LangGraph) | ✅ v0.3 (v1 slice) |
 | 5 | Guardrails + audit | — |
 | 6 | Eval harness | — |
 | 7 | UI, packaging, write-up | — |
@@ -73,3 +73,16 @@ Set `BANK_API_URL` if the bank service isn't on `http://localhost:8080`.
 | `get_trade(trade_ref)` | `GET /api/trades/{ref}` |
 | `get_confirmations(trade_ref)` | `GET /api/trades/{ref}/confirmations` |
 | `get_settlement_instructions(counterparty_code, market?)` | `GET /api/counterparties/{code}/settlement-instructions` |
+
+## Run the agent
+
+Prereqs: uv; the bank core service running on port 8080; `ANTHROPIC_API_KEY` in `.env` at the repo root. The agent starts the MCP server itself.
+
+```bash
+cd agent
+uv sync
+uv run pytest                      # unit tests, no API key or backend needed
+uv run investigate BRK-0017        # progress on stderr, recommendation JSON on stdout
+```
+
+Set `AGENT_MODEL` to try another Claude model. The agent only recommends: it has no write tools.

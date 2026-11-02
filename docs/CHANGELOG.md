@@ -1,5 +1,21 @@
 # Changelog
 
+## v0.3 — 2026-11-01 — Module 4: agent (v1 slice)
+**Changed:** LangGraph agent (`agent/`) with fixed stages: load break, classify, gather evidence (model chooses
+tools, at most 8 calls), analyse. Ends with a structured recommendation citing tool results. No write tools.
+ADR-019..021.
+
+**Measured:** root cause correct on 10 of 10 breaks with `claude-opus-5-5`, one run each, scored by hand against
+the manifest: 5 `SSI_MISMATCH` and 5 `STALE_SSI`, which share a symptom. All 10 were rated high confidence. 9 unit
+tests pass with a scripted model.
+
+**Limits:** a small sample of two break types, used while building, so this is a smoke test and not an accuracy
+figure. With no wrong answers it says nothing about confidence calibration, and only the root cause label was
+scored, not the explanation, fix or citations. The other 6 break types are unmeasured.
+
+**Found and fixed:** MCP tools report failures as content rather than raising, so a failed break lookup would have
+been classified by the model as if it were a break record. `load_break` now checks the error status and stops.
+
 ## v0.2.1 — 2026-10-25 — Bank core test coverage
 **Changed:** 17 integration tests for the bank core service (API, repositories, seed loader) running on real
 Postgres via Testcontainers (ADR-017). JaCoCo added with a 95% line and branch gate on `mvn verify` (ADR-018).

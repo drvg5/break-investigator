@@ -204,3 +204,34 @@ Tests regenerate the deterministic seed in memory to know what the database hold
 **Why:** A high gate keeps the "existing enterprise system" honest as it grows. Branch coverage is included because line coverage alone hides untested `if` paths. Nothing is excluded, so the number is not inflated.
 
 **Known limits:** Remaining misses are the compiler's synthetic default branch on an enum `switch`, seed-dependent branches in the generator, and `BankCoreApplication.main()`. Branch coverage sits about 1 point above the gate, so new seed-driven randomness could fail the build without a real bug. If that happens, lower the gate or add a targeted test; don't add exclusions to game the number.
+
+---
+
+## ADR-019 — Agent structure: fixed stages, model-chosen tools only while gathering evidence
+**Module:** 4 · **Date:** 2026-10-30
+
+**Options:** free-form agent loop · fixed workflow with LLM steps · hybrid.
+
+**Decision:** Hybrid. A LangGraph workflow runs fixed stages: classify → gather evidence → analyse → root cause and proposed fix. Only the evidence stage is a tool-using loop, with a step limit.
+
+**Why:** A bank needs a process it can audit, so the model can't skip a stage. A free-form loop could skip checks or wander. A fully fixed workflow makes the same calls for every break and leaves the eval's tool-call correctness metric nothing to measure, since the model would choose no tools. Cost: more graph code than either alternative, repaid when retrieval (v2) and the approval pause (v4) become new stages.
+
+---
+
+## ADR-020 — v1 autonomy: recommend only
+**Module:** 4 · **Date:** 2026-10-30
+
+**Options:** recommend only · recommend plus a stubbed approval step.
+
+**Decision:** Recommend only. The agent has read-only tools and a step limit, and ends with a written recommendation. No approval step in v1.
+
+**Why:** With no write tool, the agent can't change anything, so a stub would approve nothing and add unused code. The approval pause arrives in v4 with `propose_resolution`, when there's a real action to approve.
+
+---
+
+## ADR-021 — Agent runtime defaults *(implementation)*
+**Module:** 4 · **Date:** 2026-10-30
+
+**Decision:** `claude-opus-5-5` at high effort via `langchain-anthropic`, overridable with `AGENT_MODEL`. Tools come through `langchain-mcp-adapters` over one held-open session. Structured output uses `method="json_schema"`, because this model rejects the forced tool use LangChain defaults to. Tool calls run one at a time so the limit of 8 is exact. Server-side refusal fallback is on. `agent/` is its own uv project because the adapter requires `mcp` 1.x while the server uses 2.x; they only talk over stdio.
+
+**Why:** Start with the most capable model and test cheaper ones once eval numbers exist. Cost: more turns than parallel tool calls.
