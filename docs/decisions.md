@@ -180,3 +180,58 @@ Deferred to v3: red-herring (two discrepancies, one real) and false-positive con
 **Decision:** The official `mcp` Python SDK (v2, `MCPServer` API) with stdio transport. Every tool carries a `readOnlyHint` annotation. Python and dependencies managed with `uv`.
 
 **Why:** stdio is the simplest transport: the agent (or Claude Code, via `claude mcp add`) starts the server as a subprocess, with no ports or auth. The SDK makes switching to HTTP a one-line change for the Docker setup in v5.
+
+---
+
+## ADR-017 — Integration tests run on real Postgres via Testcontainers
+**Module:** 1 · **Date:** 2026-10-25
+
+**Options:** Testcontainers (Docker) · embedded Postgres (Zonky, no Docker) · H2 in PostgreSQL mode.
+
+**Decision:** Testcontainers, with the same `pgvector/pgvector:pg16` image as docker-compose, wired in through Spring Boot's `@ServiceConnection`. One container and one Spring context are shared by every integration test class (`IntegrationTestSupport`).
+
+**Why:** The SQL is Postgres-specific (`timestamptz`, identity columns, `cast(:x as varchar) is null`). H2 would only imitate it, so green tests could hide bugs that break on the real database. Zonky runs real Postgres but not the image we deploy. Testcontainers tests exactly what runs in production. Cost: `mvn test` needs Docker running, which the project already requires.
+
+Tests regenerate the deterministic seed in memory to know what the database holds, instead of hard-coding refs. They also pin API contracts the MCP layer relies on, e.g. SSI ordering (market, then latest `effectiveFrom` first), which the `get_settlement_instructions` description promises.
+
+---
+
+## ADR-018 — Coverage gate: 95% line and branch, enforced on `mvn verify`
+**Module:** 1 · **Date:** 2026-10-25
+
+**Decision:** JaCoCo `check` fails the build below 95% line *and* branch coverage across the whole module (`jacoco.minimum` in `pom.xml`). No classes are excluded. *(implementation: line + branch, bundle level, bound to `verify` so `mvn test` stays a quick run.)*
+
+**Why:** A high gate keeps the "existing enterprise system" honest as it grows. Branch coverage is included because line coverage alone hides untested `if` paths. Nothing is excluded, so the number is not inflated.
+
+**Known limits:** Remaining misses are the compiler's synthetic default branch on an enum `switch`, seed-dependent branches in the generator, and `BankCoreApplication.main()`. Branch coverage sits about 1 point above the gate, so new seed-driven randomness could fail the build without a real bug. If that happens, lower the gate or add a targeted test; don't add exclusions to game the number.
+
+---
+
+## ADR-019 — Agent structure: fixed stages, model-chosen tools only while gathering evidence
+**Module:** 4 · **Date:** 2026-10-30
+
+**Options:** free-form agent loop · fixed workflow with LLM steps · hybrid.
+
+**Decision:** Hybrid. A LangGraph workflow runs fixed stages: classify → gather evidence → analyse → root cause and proposed fix. Only the evidence stage is a tool-using loop, with a step limit.
+
+**Why:** A bank needs a process it can audit, so the model can't skip a stage. A free-form loop could skip checks or wander. A fully fixed workflow makes the same calls for every break and leaves the eval's tool-call correctness metric nothing to measure, since the model would choose no tools. Cost: more graph code than either alternative, repaid when retrieval (v2) and the approval pause (v4) become new stages.
+
+---
+
+## ADR-020 — v1 autonomy: recommend only
+**Module:** 4 · **Date:** 2026-10-30
+
+**Options:** recommend only · recommend plus a stubbed approval step.
+
+**Decision:** Recommend only. The agent has read-only tools and a step limit, and ends with a written recommendation. No approval step in v1.
+
+**Why:** With no write tool, the agent can't change anything, so a stub would approve nothing and add unused code. The approval pause arrives in v4 with `propose_resolution`, when there's a real action to approve.
+
+---
+
+## ADR-021 — Agent runtime defaults *(implementation)*
+**Module:** 4 · **Date:** 2026-10-30
+
+**Decision:** `claude-opus-5-5` at high effort via `langchain-anthropic`, overridable with `AGENT_MODEL`. Tools come through `langchain-mcp-adapters` over one held-open session. Structured output uses `method="json_schema"`, because this model rejects the forced tool use LangChain defaults to. Tool calls run one at a time so the limit of 8 is exact. Server-side refusal fallback is on. `agent/` is its own uv project because the adapter requires `mcp` 1.x while the server uses 2.x; they only talk over stdio.
+
+**Why:** Start with the most capable model and test cheaper ones once eval numbers exist. Cost: more turns than parallel tool calls.

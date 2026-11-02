@@ -1,0 +1,31 @@
+[project]
+name = "break-investigator-agent"
+version = "0.1.0"
+description = "LangGraph agent that investigates trade settlement breaks through the bank-core MCP server"
+requires-python = ">=3.11"
+dependencies = [
+    "langchain-anthropic>=1.0",
+    "langchain-mcp-adapters>=0.1",
+    "langgraph>=1.0",
+    "pydantic>=2",
+    "python-dotenv>=1",
+]
+
+[project.scripts]
+investigate = "break_investigator_agent.run:main"
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/break_investigator_agent"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"

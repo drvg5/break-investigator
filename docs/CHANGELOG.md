@@ -1,5 +1,33 @@
 # Changelog
 
+## v0.3 — 2026-11-01 — Module 4: agent (v1 slice)
+**Changed:** LangGraph agent (`agent/`) with fixed stages: load break, classify, gather evidence (model chooses
+tools, at most 8 calls), analyse. Ends with a structured recommendation citing tool results. No write tools.
+ADR-019..021.
+
+**Measured:** root cause correct on 10 of 10 breaks with `claude-opus-5-5`, one run each, scored by hand against
+the manifest: 5 `SSI_MISMATCH` and 5 `STALE_SSI`, which share a symptom. All 10 were rated high confidence. 9 unit
+tests pass with a scripted model.
+
+**Limits:** a small sample of two break types, used while building, so this is a smoke test and not an accuracy
+figure. With no wrong answers it says nothing about confidence calibration, and only the root cause label was
+scored, not the explanation, fix or citations. The other 6 break types are unmeasured.
+
+**Found and fixed:** MCP tools report failures as content rather than raising, so a failed break lookup would have
+been classified by the model as if it were a break record. `load_break` now checks the error status and stops.
+
+## v0.2.1 — 2026-10-25 — Bank core test coverage
+**Changed:** 17 integration tests for the bank core service (API, repositories, seed loader) running on real
+Postgres via Testcontainers (ADR-017). JaCoCo added with a 95% line and branch gate on `mvn verify` (ADR-018).
+Removed a dead null check in `SeedLoader`.
+
+**Measured:** 22 Java tests pass. Coverage went from 54.6% lines / 83.7% branches (generator only) to 99.5% lines /
+96.1% branches. `repo` and `api` went from 0% to 100% lines.
+
+**Improved:** the SSI ordering that the `get_settlement_instructions` description promises (market, then latest
+`effectiveFrom` first; shipped in v0.2) is now pinned by a test, so changing the query can't silently make the tool
+description wrong.
+
 ## v0.2 — 2026-10-22 — Module 2: MCP server
 **Changed:** Python MCP server (`mcp-server/`, official SDK v2, stdio, managed with uv) exposing five read-only
 tools, one per bank API endpoint: `list_open_breaks`, `get_break`, `get_trade`, `get_confirmations`,

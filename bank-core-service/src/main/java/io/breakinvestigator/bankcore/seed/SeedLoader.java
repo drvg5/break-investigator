@@ -37,8 +37,8 @@ public class SeedLoader implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) throws Exception {
-        Long existing = jdbc.queryForObject("select count(*) from trade", Long.class);
-        if (existing != null && existing > 0) {
+        long existing = jdbc.queryForObject("select count(*) from trade", Long.class);
+        if (existing > 0) {
             log.info("Seed skipped: {} trades already present. Drop the volume to reseed.", existing);
             return;
         }
