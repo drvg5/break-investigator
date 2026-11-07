@@ -86,3 +86,18 @@ uv run investigate BRK-0017        # progress on stderr, recommendation JSON on 
 ```
 
 Set `AGENT_MODEL` to try another Claude model. The agent only recommends: it has no write tools.
+
+## Build the knowledge base
+
+Prereqs: uv; Postgres running (`docker compose up -d --wait`). Synthetic runbooks and policies live in
+`knowledge-base/docs/`. Ingestion chunks them by section, embeds them locally with `bge-small-en-v1.5` (about 70 MB,
+downloaded on first run) and stores them in the `kb.chunks` table.
+
+```bash
+cd knowledge-base
+uv sync
+uv run pytest        # chunking and document tests, no database needed
+uv run kb-ingest     # rebuilds kb.chunks; safe to rerun
+```
+
+`docker compose down -v` deletes the knowledge base along with the bank data; rerun `kb-ingest` afterwards.

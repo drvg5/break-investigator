@@ -235,3 +235,58 @@ Tests regenerate the deterministic seed in memory to know what the database hold
 **Decision:** `claude-opus-5-5` at high effort via `langchain-anthropic`, overridable with `AGENT_MODEL`. Tools come through `langchain-mcp-adapters` over one held-open session. Structured output uses `method="json_schema"`, because this model rejects the forced tool use LangChain defaults to. Tool calls run one at a time so the limit of 8 is exact. Server-side refusal fallback is on. `agent/` is its own uv project because the adapter requires `mcp` 1.x while the server uses 2.x; they only talk over stdio.
 
 **Why:** Start with the most capable model and test cheaper ones once eval numbers exist. Cost: more turns than parallel tool calls.
+
+---
+
+## ADR-022 — Chunking: split by heading, with a size cap
+**Module:** 3 · **Date:** 2026-11-07
+
+**Options:** fixed-size windows · split by heading with a size cap · semantic chunking.
+
+**Decision:** One chunk per `##` section. A section over the cap is split at paragraph boundaries into numbered parts. Each chunk is embedded with a short header (document title and section name) in front of its text.
+
+**Why:** Procedures stay whole, and a citation can name the section ("Stale SSI runbook › Resolution steps"). Fixed-size windows can cut a procedure in half. Semantic chunking adds a model and tuning with no measured need, since we write the documents and control their structure. The header gives short sections context they would otherwise lack.
+
+---
+
+## ADR-023 — Embedding model: local `bge-small-en-v1.5` via fastembed
+**Module:** 3 · **Date:** 2026-11-07
+
+**Options:** local `bge-small-en-v1.5` (fastembed, ONNX) · Voyage API · OpenAI API.
+
+**Decision:** Local `BAAI/bge-small-en-v1.5`, 384 dimensions, run through `fastembed`.
+
+**Why:** Free, no extra API key, deterministic, and documents never leave the machine, which matters to a bank. It may retrieve less well than paid models; the retrieval eval (ADR-025) can test that, and swapping models means re-embedding only.
+
+---
+
+## ADR-024 — Reranking: measure hybrid search alone first, then add a local cross-encoder
+**Module:** 3 · **Date:** 2026-11-07
+
+**Options:** no reranker · none first, then a local cross-encoder · LLM reranking.
+
+**Decision:** Ship hybrid retrieval without a reranker and measure it. Then add a local cross-encoder and measure again.
+
+**Why:** It isolates what the reranker adds, so the change has a number behind it. LLM reranking costs a model call per query and is harder to make deterministic.
+
+---
+
+## ADR-025 — Retrieval quality: hand-labelled questions, recall@k and MRR
+**Module:** 3 · **Date:** 2026-11-07
+
+**Options:** hand-labelled questions · LLM-generated questions · LLM-as-judge only.
+
+**Decision:** About 30 questions written and labelled by hand, each with the chunk(s) that answer it. Scored with recall@k (is a correct chunk in the top k) and MRR (how high the first correct chunk ranks).
+
+**Why:** Labels written by the person who knows the domain can be trusted and defended. Generated questions tend to reuse the document's own wording, which flatters keyword search.
+
+---
+
+## ADR-026 — Retrieval logic is hand-written by the project owner
+**Module:** 3 · **Date:** 2026-11-07
+
+**Options:** Claude writes everything · owner writes retrieval, Claude writes the rest.
+
+**Decision:** Claude writes the documents, chunking, embedding and storage. The owner writes keyword, vector and hybrid search against an agreed interface (`retrieval.py`), and Claude reviews it.
+
+**Why:** RAG is the owner's main gap and the part interviewers probe hardest. Slower, but the owner can explain every line.
