@@ -100,4 +100,10 @@ uv run pytest        # chunking and document tests, no database needed
 uv run kb-ingest     # rebuilds kb.chunks; safe to rerun
 ```
 
+Try a search (`--method keyword|vector|hybrid`, default hybrid; `--json` for JSON lines):
+
+```bash
+uv run kb-search "which SSI version applies to a trade" -k 5
+```
+
 `docker compose down -v` deletes the knowledge base along with the bank data; rerun `kb-ingest` afterwards.

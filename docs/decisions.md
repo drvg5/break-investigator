@@ -290,3 +290,17 @@ Tests regenerate the deterministic seed in memory to know what the database hold
 **Decision:** Claude writes the documents, chunking, embedding and storage. The owner writes keyword, vector and hybrid search against an agreed interface (`retrieval.py`), and Claude reviews it.
 
 **Why:** RAG is the owner's main gap and the part interviewers probe hardest. Slower, but the owner can explain every line.
+
+**Amendment (2026-11-07):** reversed to keep momentum: Claude wrote the retrieval code too (ADR-027). The owner reviews it and must be able to explain it; the retrieval eval and question labels stay hand-written.
+
+---
+
+## ADR-027 — Retrieval: any-word keyword search, cosine vector search, fused with RRF *(implementation)*
+**Module:** 3 · **Date:** 2026-11-07
+
+**Decision:**
+- *Keyword:* Postgres full-text search, where any query word may match, ranked by `ts_rank` with title and section words weighted above body words.
+- *Vector:* cosine distance (`<=>`) on the HNSW index; score is 1 − distance.
+- *Hybrid:* Reciprocal Rank Fusion over each method's top 20, with the standard constant k = 60.
+
+**Why:** Requiring every word, Postgres's default, makes most natural questions match nothing. RRF combines ranks rather than scores, because `ts_rank` and cosine similarity are on different scales; it needs no tuning to start with. The candidate depth and k are starting values, to be tuned against the retrieval eval (ADR-025), not before.

@@ -77,4 +77,4 @@ Every version should produce a measurable "here's what I changed and what improv
 - [x] Module 1: Bank core service v0.1 (decisions ADR-001..011; see docs/CHANGELOG.md)
 - [x] Module 2: MCP server v0.2 (decisions ADR-012..016)
 - [x] Module 4 (v1 slice): agent v0.3, fixed stages with model-chosen evidence tools (decisions ADR-019..021)
-- [ ] Module 3 (v2): knowledge base and RAG (decisions ADR-022..026). Docs, chunking, embedding and storage built; next: I hand-write `retrieval.py`, label ~30 retrieval questions, then wire retrieval into the agent
+- [ ] Module 3 (v2): knowledge base and RAG (decisions ADR-022..027). Docs, ingestion and hybrid retrieval built; next: I label ~30 retrieval questions and measure recall@k/MRR, then wire retrieval into the agent

@@ -4,10 +4,12 @@
 **Changed:** 13 synthetic documents (8 runbooks, matching policy, cut-off schedule, SSI management, escalation,
 triage guide), consistent with the seed data's markets, cut-offs and 10 bps tolerance. Ingestion pipeline in
 `knowledge-base/`: chunk by section, embed locally with `bge-small-en-v1.5`, store in `kb.chunks` with a full-text
-index and an HNSW vector index. `retrieval.py` defines the search interface, to be hand-written. ADR-022..026.
+index and an HNSW vector index. Keyword, vector and hybrid (RRF) search in `retrieval.py`, plus a `kb-search`
+command. ADR-022..027.
 
 **Measured:** 13 documents give 56 chunks, 116 to 474 characters each, so the 1,200-character cap never triggers.
-10 tests pass. Ingested into real Postgres; both indexes answer queries. No retrieval quality numbers yet.
+17 tests pass, 7 of them against the real database. No retrieval quality numbers yet: the labelled questions
+(ADR-025) come next.
 
 ## v0.3 — 2026-11-01 — Module 4: agent (v1 slice)
 **Changed:** LangGraph agent (`agent/`) with fixed stages: load break, classify, gather evidence (model chooses

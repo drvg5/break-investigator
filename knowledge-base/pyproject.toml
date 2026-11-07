@@ -12,6 +12,7 @@ dependencies = [
 
 [project.scripts]
 kb-ingest = "break_investigator_kb.ingest:main"
+kb-search = "break_investigator_kb.search:main"
 
 [dependency-groups]
 dev = [
